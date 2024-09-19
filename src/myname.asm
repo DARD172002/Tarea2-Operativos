@@ -5,10 +5,14 @@ section .data
     welcome_msg db 'Bienvenido al juego! Presiona Enter para empezar...', 0
     name db 'D', 'a', 'n', 'i', 'e', 'l', 0  ; Nombre a mostrar
     name_length db $ - name                  ; Longitud del nombre
-    random_row db 0                          ; Fila aleatoria
-    random_col db 0                          ; Columna aleatoria
 
-section .text 
+section .bss
+    current_row resb 1      ; Variable para guardar la fila actual del cursor (no inicializada)
+    current_col resb 1      ; Variable para guardar la columna actual del cursor (no inicializada)
+    random_row resb 1       ; Variable para la fila aleatoria
+    random_col resb 1       ; Variable para la columna aleatoria
+
+section .text
 
 start:
     cli
@@ -27,7 +31,7 @@ start:
 wait_key:
     mov ah, 0x00
     int 0x16                   ; Interrupción de teclado
-    cmp al, 'a'                ; Verifica si se presionó la tecla 'a'
+    cmp ah, 0x4B               ; Verifica si se presionó la tecla 'a'
     je show_name_vertical       ; Si es 'a', muestra el nombre vertical
     jmp wait_key               ; De lo contrario, sigue esperando
 
@@ -74,8 +78,8 @@ show_name_random:
     ; Mueve el cursor a la posición aleatoria
     mov ah, 0x02               ; Función para mover el cursor
     mov bh, 0                  ; Página (0)
-    mov dh, [random_row]       ; Fila de la posición aleatoria
-    mov dl, [random_col]       ; Columna de la posición aleatoria
+    mov dh, [random_row]        ; Fila de la posición aleatoria
+    mov dl, [random_col]        ; Columna de la posición aleatoria
     int 0x10                   ; Mueve el cursor
 
     ; Muestra el nombre en la nueva posición
@@ -117,42 +121,55 @@ show_name:
 .done:
     ret
 
+clear_screen:
+    ; Limpia la pantalla
+    mov ax, 0x0600             ; Función para limpiar la pantalla
+    mov bh, 0x07               ; Atributo de texto (blanco sobre negro)
+    mov cx, 0x0000             ; Esquina superior izquierda
+    mov dx, 0x184F             ; Esquina inferior derecha (80x25)
+    int 0x10                   ; Interrupción 0x10 para limpiar la pantalla
+    ret
+
 show_name_vertical:
     ; Limpia la pantalla antes de mostrar el nombre vertical
-    mov ax, 0x03             ; Modo texto 80x25
-    int 0x10
+    call clear_screen
 
-    ; Establece la posición inicial del cursor (fila 0, columna 0)
-    mov ah, 0x02
-    mov bh, 0x00   ; Página 0
-    mov dh, 0x00   ; Fila 0
-    mov dl, 0x00   ; Columna 0
-    int 0x10       ; Mueve el cursor
+    ; Obtiene las coordenadas actuales del cursor
+    mov ah, 0x03               ; Función para obtener la posición del cursor
+    mov bh, 0x00               ; Página 0
+    int 0x10                   ; Interrupción 0x10, servicio 0x03
+    ; DH tiene la fila actual
+    ; DL tiene la columna actual
 
-    ; Muestra el nombre verticalmente
+    ; Guarda las coordenadas actuales
+    mov [current_row], dh
+    mov [current_col], dl
+
+    ; Muestra el nombre verticalmente a partir de las coordenadas actuales
     mov si, name
+    mov ah, 0x0E               ; Función para escribir un carácter
 
-print_char:
-    lodsb          ; Carga un byte del nombre en AL
-    or al, al      ; Comprueba si AL es 0 (fin del nombre)
+print_char_vertical:
+    lodsb                      ; Carga un byte del nombre en AL
+    or al, al                  ; Comprueba si es el final del nombre
     jz done_vertical
-    mov ah, 0x0E   ; Función para mostrar un carácter en modo texto
-    mov bh, 0x00   ; Página 0
-    mov bl, 0x07   ; Color del texto (blanco sobre negro)
-    int 0x10       ; Interrupción para mostrar el carácter
 
-    ; Mueve el cursor hacia abajo (una línea)
-    mov ah, 0x02
-    mov bh, 0x00   ; Página 0
-    mov dl, 0x00   ; Columna 0
-    inc dh         ; Incrementa la fila
-    int 0x10       ; Mueve el cursor
-    jmp print_char ; Repite para el siguiente carácter
+    ; Mueve el cursor a la fila actual y la columna actual
+    mov dh, [current_row]       ; Recupera la fila
+    mov dl, [current_col]       ; Recupera la columna
+    mov ah, 0x02               ; Función para mover el cursor
+    int 0x10                   ; Mueve el cursor
+
+    ; Escribe el carácter en la posición actual
+    mov ah, 0x0E               ; Función para escribir el carácter
+    int 0x10                   ; Escribe el carácter
+
+    ; Incrementa la fila para la siguiente letra
+    inc byte [current_row]      ; Mueve una fila hacia abajo
+    jmp print_char_vertical     ; Repite para el siguiente carácter
 
 done_vertical:
-    jmp wait_key   ; Vuelve a esperar otra tecla
-
-
+    jmp wait_key               ; Vuelve a esperar otra tecla
 
 times 510 - ($ - $$) db 0
 dw 0xAA55                     ; Firma de arranque
