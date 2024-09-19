@@ -2,10 +2,12 @@
 ORG 0x7E00                 ; Address where the game is loaded
 BITS 16                    ; 16-bit code
 
-section .data
+section .data 
     welcome_msg db 'Bienvenido al juego! Presiona Enter para empezar...', 0
-    name db 'Daniel', 0  ; Name to display
-    name_length db $ - name   ; Length of the name
+    ;name db 'DanielP', 0  ; Name to display
+    name db '***     *   *   * ***** ***** *\n*  *   * *  **  *   *   *     *\n*   * *   * * * *   *   ***   *\n*  *  ***** *  **   *   *     *\n***   *   * *   * ***** ***** *****\n***** ****  ***** *   * *****\n  *   *   * *     **  * *\n  *   ****  ***   * * * ***\n  *   *  *  *     *  ** *\n***** *   * ***** *   * *****' ;names up
+    ;name_length db $ - name   ; Length of the name
+    name_length db $ - name   ; Length of the name1 - names up
 
 section .text 
 
