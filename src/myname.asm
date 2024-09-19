@@ -35,6 +35,9 @@ wait_key:
     je show_name_vertical       ; Si es 'a', muestra el nombre vertical
     cmp ah, 0x4B               ; Verifica si se presionó la tecla 'b'
     je show_name_vertical_up    ; Si es 'b', muestra el nombre vertical hacia arriba
+    cmp ah, 0x13
+   
+    je show_welcome
     jmp wait_key               ; De lo contrario, sigue esperando
 
 show_name:
@@ -99,14 +102,14 @@ generate_random_position:
     ; Usa el valor en DX como semilla para la aleatoriedad
     mov ax, dx                ; Usa DX (parte de la hora del sistema) como semilla
     xor dx, dx
-    mov cx, 25                ; Máximo número de filas + 1
+    mov cx, 20                ; Máximo número de filas + 1
 
     ; Genera una fila aleatoria (0-24)
     div cx                     ; AX / 25 -> AX = cociente, DX = residuo
     mov [random_row], dl       ; Guarda el residuo como fila aleatoria
 
     mov ax, dx                ; Usa el valor restante en DX como semilla para la columna
-    mov cx, 80                 ; Máximo número de columnas + 1
+    mov cx, 70                 ; Máximo número de columnas + 1
 
     ; Genera una columna aleatoria (0-79)
     div cx                     ; AX / 80 -> AX = cociente, DX = residuo
@@ -140,7 +143,7 @@ print_char_vertical:
 
     ; Verifica que la posición vertical esté dentro de los límites de la pantalla
     mov dh, [current_row]       ; Recupera la fila
-    cmp dh, 24                  ; Verifica si está fuera del límite inferior
+    cmp dh, 25                  ; Verifica si está fuera del límite inferior
     jge done_vertical
 
     ; Mueve el cursor a la fila actual y la columna actual
@@ -215,6 +218,7 @@ clear_screen:
     mov dl, 0x4F               ; Columna derecha
     int 0x10                   ; Interrupción 0x10
     ret
+   
 
 times 510 - ($ - $$) db 0  ; Rellena hasta el tamaño del sector
 dw 0xAA55                  ; Firma del sector de arranque
