@@ -31,9 +31,9 @@ start:
 wait_key:
     mov ah, 0x00
     int 0x16                   ; Interrupción de teclado
-    cmp ah, 0x4B               ; Verifica si se presionó la tecla 'a'
+    cmp ah, 0x4D               ; Verifica si se presionó la tecla 'a'
     je show_name_vertical       ; Si es 'a', muestra el nombre vertical
-    cmp ah, 0x4D               ; Verifica si se presionó la tecla 'b'
+    cmp ah, 0x4B               ; Verifica si se presionó la tecla 'b'
     je show_name_vertical_up    ; Si es 'b', muestra el nombre vertical hacia arriba
     jmp wait_key               ; De lo contrario, sigue esperando
 
