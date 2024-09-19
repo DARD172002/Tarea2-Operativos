@@ -38,6 +38,8 @@ wait_key:
     cmp ah, 0x13
    
     je reset_game
+    cmp al, 't'              ; Verifica si se presionó la tecla 't'
+    je exit_program           ; Si es 't', cierra el programa
     jmp wait_key               ; De lo contrario, sigue esperando
 
 show_name:
@@ -233,6 +235,13 @@ clear_screen:
     int 0x10                   ; Interrupción 0x10
     ret
    
+exit_program:
+    call clear_screen
+    ; Sale del programa
+    mov ax, 0x4C00             ; Termina el programa con código de salida 0
+    int 0x21                   ; Interrupción de DOS
+    ret
+
 
 times 510 - ($ - $$) db 0  ; Rellena hasta el tamaño del sector
 dw 0xAA55                  ; Firma del sector de arranque
