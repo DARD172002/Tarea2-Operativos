@@ -37,14 +37,18 @@ wait_key:
     je show_name_vertical_up    ; Si es 'b', muestra el nombre vertical hacia arriba
     jmp wait_key               ; De lo contrario, sigue esperando
 
-display_name:
-    ; Limpia la pantalla antes de mostrar el nombre
-    mov ax, 0x03             ; Modo texto 80x25
-    int 0x10
-
-    ; Muestra el nombre en la nueva posición
-    call show_name
-    jmp wait_key
+show_name:
+    ; Muestra el nombre en la posición actual del cursor
+    mov si, name               ; Dirección del nombre
+    mov ah, 0x0E               ; Función para escribir un carácter
+.show_loop:
+    lodsb                      ; Carga el siguiente byte del nombre
+    cmp al, 0                  ; Fin de la cadena
+    je .done
+    int 0x10                   ; Escribe el carácter en pantalla
+    jmp .show_loop
+.done:
+    ret
 
 show_welcome:
     ; Muestra el mensaje de bienvenida
@@ -110,28 +114,6 @@ generate_random_position:
 
     ret
 
-show_name:
-    ; Muestra el nombre en la posición actual del cursor
-    mov si, name               ; Dirección del nombre
-    mov ah, 0x0E               ; Función para escribir un carácter
-.show_loop:
-    lodsb                      ; Carga el siguiente byte del nombre
-    cmp al, 0                  ; Fin de la cadena
-    je .done
-    int 0x10                   ; Escribe el carácter en pantalla
-    jmp .show_loop
-.done:
-    ret
-
-clear_screen:
-    ; Limpia la pantalla
-    mov ax, 0x0600             ; Función para limpiar la pantalla
-    mov bh, 0x07               ; Atributo de texto (blanco sobre negro)
-    mov cx, 0x0000             ; Esquina superior izquierda
-    mov dx, 0x184F             ; Esquina inferior derecha (80x25)
-    int 0x10                   ; Interrupción 0x10 para limpiar la pantalla
-    ret
-
 show_name_vertical:
     ; Limpia la pantalla antes de mostrar el nombre vertical
     call clear_screen
@@ -156,8 +138,12 @@ print_char_vertical:
     or al, al                  ; Comprueba si es el final del nombre
     jz done_vertical
 
-    ; Mueve el cursor a la fila actual y la columna actual
+    ; Verifica que la posición vertical esté dentro de los límites de la pantalla
     mov dh, [current_row]       ; Recupera la fila
+    cmp dh, 24                  ; Verifica si está fuera del límite inferior
+    jge done_vertical
+
+    ; Mueve el cursor a la fila actual y la columna actual
     mov dl, [current_col]       ; Recupera la columna
     mov ah, 0x02               ; Función para mover el cursor
     int 0x10                   ; Mueve el cursor
@@ -197,8 +183,12 @@ print_char_vertical_up:
     or al, al                  ; Comprueba si es el final del nombre
     jz done_vertical_up
 
-    ; Mueve el cursor a la fila actual y la columna actual
+    ; Verifica que la posición vertical esté dentro de los límites de la pantalla
     mov dh, [current_row]       ; Recupera la fila
+    cmp dh, 0                   ; Verifica si está fuera del límite superior
+    jle done_vertical_up
+
+    ; Mueve el cursor a la fila actual y la columna actual
     mov dl, [current_col]       ; Recupera la columna
     mov ah, 0x02               ; Función para mover el cursor
     int 0x10                   ; Mueve el cursor
@@ -214,5 +204,17 @@ print_char_vertical_up:
 done_vertical_up:
     jmp wait_key               ; Vuelve a esperar otra tecla
 
-times 510 - ($ - $$) db 0
-dw 0xAA55                     ; Firma de arranque
+clear_screen:
+    ; Limpia la pantalla
+    mov ah, 0x06               ; Función para desplazar pantalla
+    mov al, 0x00               ; Desplaza hacia arriba
+    mov bh, 0x07               ; Atributo de fondo
+    mov ch, 0x00               ; Fila superior
+    mov cl, 0x00               ; Columna izquierda
+    mov dh, 0x19               ; Fila inferior
+    mov dl, 0x4F               ; Columna derecha
+    int 0x10                   ; Interrupción 0x10
+    ret
+
+times 510 - ($ - $$) db 0  ; Rellena hasta el tamaño del sector
+dw 0xAA55                  ; Firma del sector de arranque
