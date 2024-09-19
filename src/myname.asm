@@ -3,7 +3,7 @@ BITS 16                    ; Código de 16 bits
 
 section .data
     welcome_msg db 'Bienvenido al juego! Presiona Enter para empezar...', 0
-    name db 'D', 'a', 'n', 'i', 'e', 'l', 0  ; Nombre a mostrar
+    name db 'D', 'a', 'n', 'i', 'e', 'l','','I','r','e','n','e', 0  ; Nombre a mostrar
     name_length db $ - name                  ; Longitud del nombre
 
 section .bss
