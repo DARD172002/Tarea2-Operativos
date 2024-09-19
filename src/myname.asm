@@ -33,6 +33,8 @@ wait_key:
     int 0x16                   ; Interrupción de teclado
     cmp ah, 0x4B               ; Verifica si se presionó la tecla 'a'
     je show_name_vertical       ; Si es 'a', muestra el nombre vertical
+    cmp ah, 0x4D               ; Verifica si se presionó la tecla 'b'
+    je show_name_vertical_up    ; Si es 'b', muestra el nombre vertical hacia arriba
     jmp wait_key               ; De lo contrario, sigue esperando
 
 display_name:
@@ -169,6 +171,47 @@ print_char_vertical:
     jmp print_char_vertical     ; Repite para el siguiente carácter
 
 done_vertical:
+    jmp wait_key               ; Vuelve a esperar otra tecla
+
+show_name_vertical_up:
+    ; Limpia la pantalla antes de mostrar el nombre vertical
+    call clear_screen
+
+    ; Obtiene las coordenadas actuales del cursor
+    mov ah, 0x03               ; Función para obtener la posición del cursor
+    mov bh, 0x00               ; Página 0
+    int 0x10                   ; Interrupción 0x10, servicio 0x03
+    ; DH tiene la fila actual
+    ; DL tiene la columna actual
+
+    ; Guarda las coordenadas actuales
+    mov [current_row], dh
+    mov [current_col], dl
+
+    ; Muestra el nombre verticalmente hacia arriba a partir de las coordenadas actuales
+    mov si, name
+    mov ah, 0x0E               ; Función para escribir un carácter
+
+print_char_vertical_up:
+    lodsb                      ; Carga un byte del nombre en AL
+    or al, al                  ; Comprueba si es el final del nombre
+    jz done_vertical_up
+
+    ; Mueve el cursor a la fila actual y la columna actual
+    mov dh, [current_row]       ; Recupera la fila
+    mov dl, [current_col]       ; Recupera la columna
+    mov ah, 0x02               ; Función para mover el cursor
+    int 0x10                   ; Mueve el cursor
+
+    ; Escribe el carácter en la posición actual
+    mov ah, 0x0E               ; Función para escribir el carácter
+    int 0x10                   ; Escribe el carácter
+
+    ; Decrementa la fila para la siguiente letra
+    dec byte [current_row]      ; Mueve una fila hacia arriba
+    jmp print_char_vertical_up  ; Repite para el siguiente carácter
+
+done_vertical_up:
     jmp wait_key               ; Vuelve a esperar otra tecla
 
 times 510 - ($ - $$) db 0
