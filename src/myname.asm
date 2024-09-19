@@ -37,7 +37,7 @@ wait_key:
     je show_name_vertical_up    ; Si es 'b', muestra el nombre vertical hacia arriba
     cmp ah, 0x13
    
-    je show_welcome
+    je reset_game
     jmp wait_key               ; De lo contrario, sigue esperando
 
 show_name:
@@ -206,6 +206,20 @@ print_char_vertical_up:
 
 done_vertical_up:
     jmp wait_key               ; Vuelve a esperar otra tecla
+
+reset_game:
+    ; Limpia la pantalla
+    call clear_screen
+
+    ; Muestra el mensaje de bienvenida
+    call show_welcome
+    call wait_for_enter
+
+    ; Muestra el nombre en una posición inicial aleatoria
+    call show_name_random
+
+    ; Regresa a esperar una tecla
+    jmp wait_key
 
 clear_screen:
     ; Limpia la pantalla
