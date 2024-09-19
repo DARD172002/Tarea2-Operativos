@@ -1,97 +1,130 @@
 ; My Name Game
-ORG 0x7E00                 ; Dirección donde se carga el juego
-BITS 16                    ; Código de 16 bits
+ORG 0x7E00                 ; Address where the game is loaded
+BITS 16                    ; 16-bit code
 
 section .data
     welcome_msg db 'Bienvenido al juego! Presiona Enter para empezar...', 0
-    name db 'Daniel', 0  ; Nombre a mostrar
-    name_length db $ - name     ; Longitud del nombre
-    cursor_x db 40              ; Posición inicial en X (columna)
-    cursor_y db 12              ; Posición inicial en Y (fila)
+    name db 'Daniel', 0  ; Name to display
+    name_length db $ - name   ; Length of the name
 
 section .text 
 
-
 start:
     cli
-    ; Inicializa la pantalla
-    mov ax, 0x0003             ; Modo de texto 80x25
+    ; Initialize screen
+    mov ax, 0x03             ; Text mode 80x25
     int 0x10
 
-    ; Muestra la pantalla de inicio
+    ; Show the start screen
     call show_welcome
     call wait_for_enter
 
-    ; Muestra el nombre en una posición inicial
-    call show_name
+    ; Show the name in an initial position
+    call show_name_random
 
-
-
-    
-
-    ; Espera a que se presione una tecla
+    ; Wait for a key press
 wait_key:
-    ; Espera a que se presione una tecla
+    ; Wait for a key press
     mov ah, 0x00
-    int 0x16                   ; Leer teclado
-   ret 
-
-
-
-
+    int 0x16                   ; Keyboard interrupt
+    jmp wait_key               ; Loop to wait for the key press
 
 display_name:
-    ; Limpia la pantalla antes de mostrar el nombre
-    mov ax, 0x0003             ; Modo de texto 80x25
+    ; Clear the screen before showing the name
+    mov ax, 0x03             ; Text mode 80x25
     int 0x10
 
-    ; Muestra el nombre en la nueva posición
+    ; Show the name at the new position
     call show_name
     jmp wait_key
 
 show_welcome:
-    ; Muestra el mensaje de bienvenida
+    ; Show the welcome message
     mov si, welcome_msg
-    mov dx, 10                 ; Fila (ejemplo)
-    mov bx, 40                 ; Columna (ejemplo)
+    mov dx, 10                 ; Row (example)
+    mov cx, 0                  ; Column (example)
 
-    mov ah, 0x0E               ; Función para escribir un carácter
+    mov ah, 0x02               ; Function to move cursor
+    int 0x10                   ; Move cursor
+
+    mov ah, 0x0E               ; Function to write a character
 .show_welcome_loop:
-    lodsb                      ; Carga el siguiente byte del mensaje
-    cmp al, 0                  ; Fin de cadena
+    lodsb                      ; Load next byte of the message
+    cmp al, 0                  ; End of string
     je .done_welcome
-    int 0x10                   ; Escribe el carácter en pantalla
+    int 0x10                   ; Write character to screen
     jmp .show_welcome_loop
 .done_welcome:
     ret
 
 wait_for_enter:
-    ; Espera a que se presione Enter
+    ; Wait for Enter key
     mov ah, 0x00
-    int 0x16                   ; Leer teclado
-    cmp al, 0x0D               ; Enter
+    int 0x16                   ; Keyboard interrupt
+    cmp al, 0x0D               ; Enter key
     jne wait_for_enter
     ret
 
-show_name:
-    ; Mueve el cursor a la posición
-    mov ah, 0x02               ; Función para mover el cursor
-    mov bh, 0                  ; Página (0)
-    mov dx, [cursor_y]         ; Fila (Y)
-    mov cx, [cursor_x]         ; Columna (X)
-    int 0x10                   ; Mueve el cursor
+show_name_random:
+    ; Generate a random position for the name
+    call generate_random_position
 
-    ; Muestra el nombre
-    mov si, name               ; Dirección del nombre
-    mov ah, 0x0E               ; Función para escribir un carácter
+    ; Move cursor to the random position
+    mov ah, 0x02               ; Function to move cursor
+    mov bh, 0                  ; Page (0)
+    mov dh, [random_row]       ; Row from random position
+    mov dl, [random_col]       ; Column from random position
+    int 0x10                   ; Move cursor
+
+    ; Display the name at the new position
+    call show_name
+
+    ; Wait for a key press
+wait_key_random:
+    ; Wait for a key press
+    mov ah, 0x00
+    int 0x16                   ; Keyboard interrupt
+    jmp wait_key_random        ; Loop to wait for the key press
+
+generate_random_position:
+    ; Get the system time for randomness
+    mov ah, 0x00
+    int 0x1A                  ; Interrupt to get system time
+    ; Use the value in DX as a seed for randomness
+    mov ax, dx                ; Use DX (part of the system time) as seed
+    xor dx, dx
+    mov cx, 25                ; Maximum row number + 1
+
+    ; Generate a random row (0-24)
+    div cx                     ; AX / 25 -> AX = quotient, DX = remainder
+    mov [random_row], dl       ; Store remainder as random row
+
+    mov ax, dx                ; Use remaining DX value as seed for column
+    mov cx, 80                 ; Maximum column number + 1
+
+    ; Generate a random column (0-79)
+    div cx                     ; AX / 80 -> AX = quotient, DX = remainder
+    mov [random_col], dl       ; Store remainder as random column
+
+    ret
+
+show_name:
+    ; Display the name at the current cursor position
+    mov si, name               ; Address of the name
+    mov ah, 0x0E               ; Function to write a character
 .show_loop:
-    lodsb                      ; Carga el siguiente byte del nombre
-    cmp al, 0                  ; Fin de cadena
+    lodsb                      ; Load next byte of the name
+    cmp al, 0                  ; End of string
     je .done
-    int 0x10                   ; Escribe el carácter en pantalla
+    int 0x10                   ; Write character to screen
     jmp .show_loop
 .done:
     ret
 
+section .bss
+    ; Variables to store random values for cursor position
+    random_row db 0
+    random_col db 0
+
 times 510 - ($ - $$) db 0
-dw 0xAA55                     ; Firma de arranque
+dw 0xAA55                     ; Boot signature
