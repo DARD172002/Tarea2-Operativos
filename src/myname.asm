@@ -31,10 +31,13 @@ start:
 wait_key:
     mov ah, 0x00
     int 0x16                   ; Interrupción de teclado
-    cmp ah, 0x4D               ; Verifica si se presionó la tecla 'a'
-    je show_name_vertical       ; Si es 'a', muestra el nombre vertical
-    cmp ah, 0x4B               ; Verifica si se presionó la tecla 'b'
-    je show_name_vertical_up    ; Si es 'b', muestra el nombre vertical hacia arriba
+    cmp ah, 0x4B               ; Verifica si se presionó la tecla 'flecha izq'
+    je show_name_vertical       ; Si es 'flecha izq', muestra el nombre vertical
+    cmp ah, 0x4D               ; Verifica si se presionó la tecla 'flecha der'
+    je show_name_vertical_up    ; Si es 'flecha der', muestra el nombre vertical hacia arriba
+    cmp ah, 0x13               ; Verifica si se presionó la tecla 'R'
+    je clear_screen            ; Limpia pantalla
+    je show_welcome            ; Si es 'R', Reinicia el programa entrando a rutina de bienvenida
     jmp wait_key               ; De lo contrario, sigue esperando
 
 display_name:
