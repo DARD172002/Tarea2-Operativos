@@ -56,12 +56,12 @@ show_name:
 show_welcome:
     ; Muestra el mensaje de bienvenida
     mov si, welcome_msg
-    mov dx, 10                 ; Fila (ejemplo)
-    mov cx, 0                  ; Columna (ejemplo)
-
     mov ah, 0x02               ; Función para mover el cursor
+    mov bh, 0                  ; Página (0)
+    mov dh, 0                 ; Fila fija para el mensaje de bienvenida
+    mov dl, 0                  ; Columna fija para el mensaje de bienvenida
     int 0x10                   ; Mueve el cursor
-
+    
     mov ah, 0x0E               ; Función para escribir un carácter
 .show_welcome_loop:
     lodsb                      ; Carga el siguiente byte del mensaje
